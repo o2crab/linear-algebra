@@ -78,4 +78,4 @@ impl<T: Num> Sum for Complex<T> {
     }
 }
 
-impl<T: Num> Num for Complex<T> {}
+impl<T: RealNum> Num for Complex<T> {}

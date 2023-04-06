@@ -8,11 +8,13 @@ use std::iter::Sum;
 pub trait Num : Clone + Copy + Display + PartialEq + Neg<Output = Self> + Add<Self, Output = Self> + Zero + Sub<Self, Output = Self> + Mul<Self, Output = Self> + Sum {
 }
 
-impl Num for i32 {
-}
 
-impl Num for f32 {
-}
+trait RealNum: Clone + Copy + Display + PartialEq + Neg<Output = Self> + Add<Self, Output = Self> + Zero + Sub<Self, Output = Self> + Mul<Self, Output = Self> + Sum {}
+
+impl RealNum for i32 {}
+impl RealNum for f32 {}
+
+impl<T: RealNum> Num for T {}
 
 
 pub trait Zero {
