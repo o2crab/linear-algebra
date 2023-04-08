@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Complex<T>(pub T, pub T);
 
 impl<T: Num> Complex<T> {
@@ -12,16 +12,34 @@ impl<T: Num> Complex<T> {
         self.1
     }
 
-    pub fn conjugate(&self) -> Self {
+    pub fn c(&self) -> Self {
         Self(self.re(), - self.im())
     }
 }
+
 impl<T: Num> Display for Complex<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.im() {
-            x if x == T::zero() => write!(f, "{}", self.re()),
-            _ => write!(f, "{}{:+}i", self.re(), self.im())
+        if self.im() == T::zero() {
+            return write!(f, "{}", self.re());
         }
+        
+        if self.re() == T::zero() {
+            let im =
+                match self.im() {
+                    x if x == T::one() => String::new(),
+                    x if x == - T::one() => String::from("-"),
+                    x => x.to_string()
+                };
+            return write!(f, "{}i", im);
+        }
+
+        let im =
+            match self.im() {
+                x if x == T::one() => String::from("+"),
+                x if x == - T::one() => String::from("-"),
+                x => format!("{:+}", x)
+            };
+        write!(f, "{}{:+}i", self.re(), im)
     }
 }
 
@@ -66,9 +84,15 @@ impl<T: Num> Mul for Complex<T> {
 
     fn mul(self, rhs: Self) -> Self::Output {
         Self(
-            self.re() * rhs.re(),
-            self.im() * rhs.im()
+            self.re() * rhs.re() - self.im() * rhs.im(),
+            self.re() * rhs.im() + self.im() * rhs.re()
         )
+    }
+}
+
+impl<T: Num> One for Complex<T> {
+    fn one() -> Self {
+        Self(T::one(), T::one())
     }
 }
 
