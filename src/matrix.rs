@@ -108,7 +108,11 @@ impl<T: Num> Add for &Matrix<T> {
     type Output = Matrix<T>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        zip_with(|x, y| x + y, &self, &rhs)
+        if let Some(m) = zip_with(|x, y| x + y, self, rhs) {
+            m
+        } else {
+            panic!("you can only add matrices with the same shape");
+        }
     }
 }
 
@@ -124,7 +128,11 @@ impl<T: Num> Sub for &Matrix<T> {
     type Output = Matrix<T>;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        zip_with(|x, y| x - y, self, rhs)
+        if let Some(m) = zip_with(|x, y| x - y, self, rhs) {
+            m
+        } else {
+            panic!("you can only subtract matrices with the same shape");
+        }
     }
 }
 
@@ -143,7 +151,10 @@ impl<T: Num> Mul for &Matrix<T> {
         let (l, m) = self.shape();
         let (m2, n) = rhs.shape();
 
-        assert_eq!(m, m2);
+        assert_eq!(
+            m, m2,
+            "lhs width must match rhs height"
+        );
 
         let mut matrix = Self::Output::zeros(l, n);
         for i in 0..l {
@@ -168,9 +179,11 @@ impl<T: RealNum> Matrix<Complex<T>> {
     }
 }
 
-fn zip_with<F, T: Num, U: Num>(f: F, m1: &Matrix<T>, m2: &Matrix<T>) -> Matrix<U>
+fn zip_with<F, T: Num, U: Num>(f: F, m1: &Matrix<T>, m2: &Matrix<T>) -> Option<Matrix<U>>
 where F: Fn(T, T) -> U {
-    assert_eq!(m1.shape(), m2.shape());
+    if m1.shape() != m2.shape() {
+        return None;
+    }
 
     let v =
     m1.elem.iter().zip(m2.elem.iter()).map(
@@ -178,7 +191,7 @@ where F: Fn(T, T) -> U {
             |(e1, e2)| f(*e1, *e2)
         ).collect()
     ).collect();
-    Matrix::from_vec(v)
+    Some(Matrix::from_vec(v))
 }
 
 fn map_elem<F, T: Num, U: Num>(f: F, x: &Matrix<T>) -> Matrix<U>
@@ -256,10 +269,10 @@ mod tests {
 
         #[test]
         fn matrix_2_3_return_3_2() {
-            let matrix_2_3 = Matrix{ elem: vec![
+            let matrix_2_3 = Matrix::from_vec(vec![
                 vec![1, 2, 3],
                 vec![1, 3, 2],
-            ]};
+            ]);
             assert_eq!(
                 matrix_2_3.shape(),
                 (2, 3)
@@ -272,18 +285,18 @@ mod tests {
 
         #[test]
         fn matrix_2_2_is_square() {
-            let mat_2_2 = Matrix{ elem: vec![
+            let mat_2_2 = Matrix::from_vec(vec![
                 vec![1, 2],
                 vec![4, -2]
-            ]};
+            ]);
             assert!(mat_2_2.is_square());
         }
 
         #[test]
         fn matrix_1_2_is_not_square() {
-            let mat_1_2 = Matrix { elem: vec![
+            let mat_1_2 = Matrix::from_vec(vec![
                 vec![1, 2]
-            ]};
+            ]);
             assert!(!mat_1_2.is_square());
         }
     }
@@ -296,7 +309,7 @@ mod tests {
             let mat: Matrix<i32> = Matrix::zeros(2, 3);
             assert_eq!(
                 mat,
-                Matrix{ elem: vec![ vec![0; 3]; 2] }
+                Matrix::from_vec(vec![ vec![0; 3]; 2])
             );
         }
     }
@@ -309,7 +322,7 @@ mod tests {
             let mat: Matrix<i32> = Matrix::e(1);
             assert_eq!(
                 mat,
-                Matrix{ elem: vec![vec![1]] }
+                Matrix::from_vec(vec![vec![1]])
             );
         }
 
@@ -318,11 +331,11 @@ mod tests {
             let mat: Matrix<i32> = Matrix::e(3);
             assert_eq!(
                 mat,
-                Matrix{ elem: vec![
+                Matrix::from_vec(vec![
                     vec![1, 0, 0],
                     vec![0, 1, 0],
                     vec![0, 0, 1]
-                ]}
+                ])
             );
         }
     }
@@ -332,60 +345,60 @@ mod tests {
 
         #[test]
         fn transpose_matrix_2_3() {
-            let mat = Matrix{ elem: vec![
+            let mat = Matrix::from_vec(vec![
                 vec![11, 12],
                 vec![21, 22],
                 vec![31, 32]
-            ]};
+            ]);
             assert_eq!(
                 mat.t(),
-                Matrix{ elem: vec![
+                Matrix::from_vec(vec![
                     vec![11, 21, 31],
                     vec![12, 22, 32]
-                ]}
+                ])
             );
         }
 
         #[test]
         fn transpose_matrix_1_3() {
-            let mat = Matrix{ elem: vec![ vec![1, 2, 3]] };
+            let mat = Matrix::from_vec(vec![ vec![1, 2, 3]]);
             assert_eq!(
                 mat.t(),
-                Matrix{ elem: vec![
+                Matrix::from_vec(vec![
                     vec![1],
                     vec![2],
                     vec![3]
-                ]}
+                ])
             );
         }
 
         #[test]
         fn transpose_matrix_3_1() {
             let mat =
-                Matrix{ elem: vec![
+                Matrix::from_vec(vec![
                     vec![1],
                     vec![2],
                     vec![3]
-                ]};
+                ]);
             assert_eq!(
                 mat.t(),
-                Matrix{ elem: vec![ vec![1, 2, 3]] }
+                Matrix::from_vec(vec![ vec![1, 2, 3]])
             );
         }
     }
 
     #[test]
     fn scalar_mul() {
-        let mat = Matrix{ elem: vec![
+        let mat = Matrix::from_vec(vec![
             vec![1, 2],
             vec![0, -5]
-        ]};
+        ]);
         assert_eq!(
             mat.scalar_mul(3),
-            Matrix{elem: vec![
+            Matrix::from_vec(vec![
                 vec![3, 6],
                 vec![0, -15]
-            ]}
+            ])
         );
     }
 
@@ -394,29 +407,29 @@ mod tests {
 
         #[test]
         #[should_panic(expected = "only square matrices can be powered")]
-        fn non_square_panic() {
-            let non_square = Matrix{ elem: vec![
+        fn non_square_matrix_panic() {
+            let non_square_mat = Matrix::from_vec(vec![
                 vec![1, 2]
-            ]};
-            non_square.pow(3);
+            ]);
+            non_square_mat.pow(3);
         }
 
         #[test]
         #[should_panic(expected = "pow by 0 not allowed")]
         fn power_by_0_panic() {
-            let mat = Matrix{ elem: vec![
+            let mat = Matrix::from_vec(vec![
                 vec![1, 2],
                 vec![0, -1]
-            ]};
+            ]);
             mat.pow(0);
         }
 
         #[test]
         fn power_by_1_return_original() {
-            let mat = Matrix{ elem: vec![
+            let mat = Matrix::from_vec(vec![
                 vec![0, -1],
                 vec![1, 0]
-            ]};
+            ]);
             assert_eq!(
                 mat.clone().pow(1),
                 mat
@@ -425,10 +438,10 @@ mod tests {
 
         #[test]
         fn power_by_even_number() {
-            let mat = Matrix{ elem: vec![
+            let mat = Matrix::from_vec(vec![
                 vec![0, -1],
                 vec![1, 0]
-            ]};
+            ]);
             assert_eq!(
                 mat.pow(4),
                 Matrix::e(2)
@@ -437,10 +450,10 @@ mod tests {
 
         #[test]
         fn power_by_odd_number() {
-            let mat = Matrix{ elem: vec![
+            let mat = Matrix::from_vec(vec![
                 vec![0, -1],
                 vec![1, 0]
-            ]};
+            ]);
             assert_eq!(
                 mat.pow(5),
                 mat
@@ -452,35 +465,35 @@ mod tests {
         use super::*;
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "you can only add matrices with the same shape")]
         fn different_size_panic() {
-            let mat1 = Matrix{ elem: vec![
+            let mat1 = Matrix::from_vec(vec![
                 vec![11, 12],
                 vec![21, 22]
-            ]};
-            let mat2 = Matrix{ elem: vec![
+            ]);
+            let mat2 = Matrix::from_vec(vec![
                 vec![11, 12, 13],
                 vec![21, 22, 23]
-            ]};
+            ]);
             let _ = mat1 + mat2;
         }
 
         #[test]
-        fn return_added() {
-            let mat1 = Matrix{ elem: vec![
+        fn same_size_return_added() {
+            let mat1 = Matrix::from_vec(vec![
                 vec![1, 2],
                 vec![3, 4]
-            ]};
-            let mat2 = Matrix{ elem: vec![
+            ]);
+            let mat2 = Matrix::from_vec(vec![
                 vec![10, 20],
                 vec![30, 40]
-            ]};
+            ]);
             assert_eq!(
                 mat1 + mat2,
-                Matrix{ elem: vec![
+                Matrix::from_vec(vec![
                     vec![11, 22],
                     vec![33, 44]
-                ]}
+                ])
             );
         }
     }
@@ -489,36 +502,185 @@ mod tests {
         use super::*;
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "you can only add matrices with the same shape")]
         fn different_size_panic() {
-            let mat1 = Matrix{ elem: vec![
+            let mat1 = Matrix::from_vec(vec![
                 vec![11, 12],
                 vec![21, 22]
-            ]};
-            let mat2 = Matrix{ elem: vec![
+            ]);
+            let mat2 = Matrix::from_vec(vec![
                 vec![11, 12, 13],
                 vec![21, 22, 23]
-            ]};
+            ]);
             let _ = &mat1 + &mat2;
         }
 
         #[test]
-        fn return_added() {
-            let mat1 = Matrix{ elem: vec![
+        fn same_size_return_added() {
+            let mat1 = Matrix::from_vec(vec![
                 vec![1, 2],
                 vec![3, 4]
-            ]};
-            let mat2 = Matrix{ elem: vec![
+            ]);
+            let mat2 = Matrix::from_vec(vec![
                 vec![10, 20],
                 vec![30, 40]
-            ]};
+            ]);
             assert_eq!(
                 &mat1 + &mat2,
-                Matrix{ elem: vec![
+                Matrix::from_vec(vec![
                     vec![11, 22],
                     vec![33, 44]
-                ]}
+                ])
             );
         }
+    }
+
+    mod move_sub {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "you can only subtract matrices with the same shape")]
+        fn different_size_panic() {
+            let mat1 = Matrix::from_vec(vec![
+                vec![11, 12],
+                vec![21, 22]
+            ]);
+            let mat2 = Matrix::from_vec(vec![
+                vec![11, 12, 13],
+                vec![21, 22, 23]
+            ]);
+            let _ = mat1 - mat2;
+        }
+
+        #[test]
+        fn same_size_return_subtracted() {
+            let mat1 = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 4]
+            ]);
+            let mat2 = Matrix::from_vec(vec![
+                vec![10, 20],
+                vec![30, 40]
+            ]);
+            assert_eq!(
+                mat1 - mat2,
+                Matrix::from_vec(vec![
+                    vec![-9, -18],
+                    vec![-27, -36]
+                ])
+            );
+        }
+    }
+
+    mod ref_sub {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "you can only subtract matrices with the same shape")]
+        fn different_size_panic() {
+            let mat1 = Matrix::from_vec(vec![
+                vec![11, 12],
+                vec![21, 22]
+            ]);
+            let mat2 = Matrix::from_vec(vec![
+                vec![11, 12, 13],
+                vec![21, 22, 23]
+            ]);
+            let _ = &mat1 - &mat2;
+        }
+
+        #[test]
+        fn same_size_return_subtracted() {
+            let mat1 = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 4]
+            ]);
+            let mat2 = Matrix::from_vec(vec![
+                vec![10, 20],
+                vec![30, 40]
+            ]);
+            assert_eq!(
+                &mat1 - &mat2,
+                Matrix::from_vec(vec![
+                    vec![-9, -18],
+                    vec![-27, -36]
+                ])
+            );
+        }
+    }
+
+    mod move_mul {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "lhs width must match rhs height")]
+        fn lhs_width_rhs_height_unmatch_panic() {
+            let mat1 = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 4],
+                vec![5, 6]
+            ]);
+            let mat2 = Matrix::from_vec(vec![
+                vec![1, 2, 3],
+                vec![4, 5, 6],
+                vec![7, 8, 9]
+            ]);
+            let _ = mat1 * mat2;
+        }
+
+        #[test]
+        fn match_return_product() {
+            let mat1 = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 4],
+                vec![5, 6]
+            ]);
+            let mat2 = Matrix::from_vec(vec![
+                vec![1, 2, 3],
+                vec![4, 5, 6],
+            ]);
+            let prod = mat1 * mat2;
+            assert_eq!(
+                prod,
+                Matrix::from_vec(vec![
+                    vec![9, 12, 15],
+                    vec![19, 26, 33],
+                    vec![29, 40, 51]
+                ])
+            )
+        }
+    }
+
+    #[test]
+    fn c_return_conjugate() {
+        let m = Matrix::from_vec(vec![
+            vec![Complex(1,2), Complex(2,-3)],
+            vec![Complex(1,0), Complex(0,3)],
+            vec![Complex(0,-5), Complex(2,1)],
+        ]);
+        assert_eq!(
+            m.c(),
+            Matrix::from_vec(vec![
+                vec![Complex(1,-2), Complex(2,3)],
+                vec![Complex(1,0), Complex(0,-3)],
+                vec![Complex(0,5), Complex(2,-1)],
+            ])
+        )
+    }
+
+    #[test]
+    fn hermite() {
+        let m = Matrix::from_vec(vec![
+            vec![Complex(1,2), Complex(2,-3)],
+            vec![Complex(1,0), Complex(0,3)],
+            vec![Complex(0,-5), Complex(2,1)],
+        ]);
+        assert_eq!(
+            m.hermite(),
+            Matrix::from_vec(vec![
+                vec![Complex(1,-2), Complex(1,0), Complex(0,5)],
+                vec![Complex(2,3), Complex(0,-3), Complex(2,-1)]
+            ])
+        )
     }
 }
