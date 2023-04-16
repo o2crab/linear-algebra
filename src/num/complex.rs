@@ -1,7 +1,13 @@
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub struct Complex<T>(pub T, pub T);
+pub struct Complex<T>(T, T);
+
+impl<T: RealNum> Complex<T> {
+    pub fn new(re: T, im: T) -> Self {
+        Self(re, im)
+    }
+}
 
 impl<T: Num> Complex<T> {
     pub fn re(&self) -> T {
