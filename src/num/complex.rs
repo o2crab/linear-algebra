@@ -103,3 +103,96 @@ impl<T: Num> Sum for Complex<T> {
 }
 
 impl<T: RealNum> Num for Complex<T> {}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn re_return_real_part() {
+        let c = Complex(1, 2);
+        assert_eq!(
+            c.re(),
+            1
+        )
+    }
+
+    #[test]
+    fn im_return_imaginary_part() {
+        let c = Complex(1, 2);
+        assert_eq!(
+            c.im(),
+            2
+        )
+    }
+
+    #[test]
+    fn c_return_conjugate() {
+        let c = Complex(1, 2);
+        assert_eq!(
+            c.c(),
+            Complex(1, -2)
+        )
+    }
+
+    #[test]
+    fn neg_reverse_re_and_im() {
+        let c = Complex(1, 2);
+        assert_eq!(
+            -c,
+            Complex(-1, -2)
+        )
+    }
+
+    #[test]
+    fn add() {
+        let c1 = Complex(1, 2);
+        let c2 = Complex(2, -3);
+        assert_eq!(
+            c1 + c2,
+            Complex(3, -1)
+        )
+    }
+
+    #[test]
+    fn sub() {
+        let c1 = Complex(1, 2);
+        let c2 = Complex(2, -3);
+        assert_eq!(
+            c1 - c2,
+            Complex(-1, 5)
+        )
+    }
+
+    #[test]
+    fn mul_re_return_re_prod() {
+        let c1 = Complex(2, 0);
+        let c2 = Complex(3, 0);
+        assert_eq!(
+            c1 * c2,
+            Complex(6, 0)
+        )
+    }
+
+    #[test]
+    fn mul_im_return_neg_re_prod() {
+        let c1 = Complex(0, 2);
+        let c2 = Complex(0, 3);
+        assert_eq!(
+            c1 * c2,
+            Complex(-6, 0)
+        )
+    }
+
+    #[test]
+    fn mul_mix() {
+        let c1 = Complex(1, 2);
+        let c2 = Complex(3, 4);
+        assert_eq!(
+            c1 * c2,
+            Complex(1*3 - 2*4, 1*4 + 2*3)
+        )
+    }
+}
