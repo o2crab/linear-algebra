@@ -6,8 +6,12 @@ pub struct Rational<T>(T, T);
 
 impl<T: Integer> Rational<T> {
     pub fn new(a: T, b: T) -> Self {
-        assert!(b != T::zero());
+        assert!(
+            b != T::zero(),
+            "denominator cannot be 0"
+        );
 
+        // make the denominator positive
         if b < T::zero() {
             Self(-a, -b).reduce()
         } else {
@@ -81,6 +85,9 @@ impl<T: Integer> Sum for Rational<T> {
 
 impl<T: Integer> RealNum for Rational<T> {}
 
+
+pub trait Integer: Num + Div<Output = Self> + Rem<Output = Self> + PartialOrd {}
+
 fn gcd<T: Integer>(a: T, b: T) -> T {
     let a = abs(a);
     let b = abs(b);
@@ -99,6 +106,179 @@ fn abs<T: Integer>(x: T) -> T {
     }
 }
 
-pub trait Integer: Num + Div<Output = Self> + Rem<Output = Self> + PartialOrd {}
-
 impl Integer for i32 {}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod gcd {
+        use super::*;
+
+        #[test]
+        fn gcd_18_12_return_6() {
+            assert_eq!(
+                gcd(18, 12),
+                6
+            )
+        }
+
+        #[test]
+        fn gcd_12_18_return_6() {
+            assert_eq!(
+                gcd(12, 18),
+                6
+            )
+        }
+
+        #[test]
+        fn gcd_0_b_return_b() {
+            let b = 24;
+            assert_eq!(
+                gcd(0, b),
+                b
+            )
+        }
+
+        #[test]
+        fn gcd_neg_b_return_gcd_pos_b() {
+            let a = -6;
+            let b = 9;
+            assert_eq!(
+                gcd(a, b),
+                gcd(-a, b)
+            )
+        }
+
+        #[test]
+        fn gcd_a_neg_return_gcd_a_pos() {
+            let a = 6;
+            let b = -9;
+            assert_eq!(
+                gcd(a, b),
+                gcd(a, -b)
+            )
+        }
+    }
+
+    mod abs {
+        use super::*;
+
+        #[test]
+        fn pos_return_pos() {
+            let x = 2;
+            assert_eq!(
+                abs(x),
+                x
+            )
+        }
+
+        #[test]
+        fn zero_return_zero() {
+            let x = 0;
+            assert_eq!(
+                abs(x),
+                x
+            )
+        }
+
+        #[test]
+        fn neg_return_pos() {
+            let x = -2;
+            assert_eq!(
+                abs(x),
+                -x
+            )
+        }
+    }
+
+    mod new {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "denominator cannot be 0")]
+        fn denominator_cannot_be_0() {
+            Rational::new(2, 0);
+        }
+
+        #[test]
+        fn reduced_return_reduced() {
+            assert_eq!(
+                Rational::new(2, 3),
+                Rational(2, 3)
+            )
+        }
+
+        #[test]
+        fn unreduced_return_reduced() {
+            assert_eq!(
+                Rational::new(12, 18),
+                Rational(2, 3)
+            )
+        }
+
+        #[test]
+        fn zero_return_rational_0_1() {
+            assert_eq!(
+                Rational::new(0, -6),
+                Rational(0, 1)
+            )
+        }
+
+        #[test]
+        fn denominator_become_positive() {
+            assert_eq!(
+                Rational::new(12, -18),
+                Rational(-2, 3)
+            )
+        }
+    }
+
+    mod reduce {
+        use super::*;
+
+        #[test]
+        fn reduced_return_itself() {
+            let x = Rational(2, 3);
+            assert_eq!(
+                x.reduce(),
+                Rational(2, 3)
+            )
+        }
+
+        #[test]
+        fn unreduced_return_reduced() {
+            let x = Rational(12, 18);
+            assert_eq!(
+                x.reduce(),
+                Rational(2, 3)
+            )
+        }
+    }
+
+    #[test]
+    fn add_1_3_and_1_6_return_1_2() {
+        assert_eq!(
+            Rational::new(1,3) + Rational::new(1,6),
+            Rational::new(1,2)
+        )
+    }
+
+    #[test]
+    fn sub() {
+        assert_eq!(
+            Rational::new(1,6) - Rational::new(1,2),
+            Rational::new(-1,3)
+        )
+    }
+
+    #[test]
+    fn mul() {
+        assert_eq!(
+            Rational::new(-3, 8) * Rational::new(10, 9),
+            Rational::new(-5, 12)
+        )
+    }
+}
