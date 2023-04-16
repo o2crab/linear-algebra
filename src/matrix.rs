@@ -654,16 +654,16 @@ mod tests {
     #[test]
     fn c_return_conjugate() {
         let m = Matrix::from_vec(vec![
-            vec![Complex(1,2), Complex(2,-3)],
-            vec![Complex(1,0), Complex(0,3)],
-            vec![Complex(0,-5), Complex(2,1)],
+            vec![Complex::new(1,2), Complex::new(2,-3)],
+            vec![Complex::new(1,0), Complex::new(0,3)],
+            vec![Complex::new(0,-5), Complex::new(2,1)],
         ]);
         assert_eq!(
             m.c(),
             Matrix::from_vec(vec![
-                vec![Complex(1,-2), Complex(2,3)],
-                vec![Complex(1,0), Complex(0,-3)],
-                vec![Complex(0,5), Complex(2,-1)],
+                vec![Complex::new(1,-2), Complex::new(2,3)],
+                vec![Complex::new(1,0), Complex::new(0,-3)],
+                vec![Complex::new(0,5), Complex::new(2,-1)],
             ])
         )
     }
@@ -671,15 +671,15 @@ mod tests {
     #[test]
     fn hermite() {
         let m = Matrix::from_vec(vec![
-            vec![Complex(1,2), Complex(2,-3)],
-            vec![Complex(1,0), Complex(0,3)],
-            vec![Complex(0,-5), Complex(2,1)],
+            vec![Complex::new(1,2), Complex::new(2,-3)],
+            vec![Complex::new(1,0), Complex::new(0,3)],
+            vec![Complex::new(0,-5), Complex::new(2,1)],
         ]);
         assert_eq!(
             m.hermite(),
             Matrix::from_vec(vec![
-                vec![Complex(1,-2), Complex(1,0), Complex(0,5)],
-                vec![Complex(2,3), Complex(0,-3), Complex(2,-1)]
+                vec![Complex::new(1,-2), Complex::new(1,0), Complex::new(0,5)],
+                vec![Complex::new(2,3), Complex::new(0,-3), Complex::new(2,-1)]
             ])
         )
     }
