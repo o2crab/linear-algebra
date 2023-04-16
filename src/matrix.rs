@@ -75,6 +75,49 @@ impl<T: Num> Matrix<T> {
             x => &(self * self).pow(x / 2) * self
         }
     }
+
+    pub fn det(&self) -> T {
+        assert!(
+            self.is_square(),
+            "det is only defined for square matrices"
+        );
+
+        if self.shape().0 == 1 {
+            return self.elem[0][0];
+        } else {
+            self.elem[0].iter().enumerate().map(|(j, &a1j)| {
+                let j = j+1;
+                if (1+j) % 2 == 0 {
+                    a1j * self.submat(1,j).det()
+                } else {
+                    - a1j * self.submat(1,j).det()
+                }
+            }).sum()
+        }
+    }
+
+    fn submat(&self, i: usize, j: usize) -> Self {
+        let (m, n) = self.shape();
+        assert!(m > 1 && n > 1);
+
+        let i = i-1;
+        let j = j-1;
+
+        let mut v = Vec::new();
+        for s in 0..m {
+            if s == i {
+                continue;
+            }
+            v.push(Vec::new());
+            for t in 0..n {
+                if t == j {
+                    continue;
+                }
+                v.last_mut().unwrap().push(self.elem[s][t]);
+            }
+        }
+        Matrix::from_vec(v)
+    }
 }
 
 impl<T: Num> std::fmt::Display for Matrix<T> {
@@ -682,5 +725,53 @@ mod tests {
                 vec![Complex::new(2,3), Complex::new(0,-3), Complex::new(2,-1)]
             ])
         )
+    }
+
+    mod det {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "det is only defined for square matrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1, 2, 3],
+                vec![4, 5, 6]
+            ]);
+            non_square.det();
+        }
+
+        #[test]
+        fn one() {
+            let m = Matrix::from_vec(vec![vec![2]]);
+            assert_eq!(
+                m.det(),
+                2
+            );
+        }
+
+        #[test]
+        fn two() {
+            let m = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 4]
+            ]);
+            assert_eq!(
+                m.det(),
+                1 * 4 - 2 * 3
+            )
+        }
+
+        #[test]
+        fn three() {
+            let m = Matrix::from_vec(vec![
+                vec![2, 1, 0],
+                vec![3, 1, 2],
+                vec![-1, 0, 5]
+            ]);
+            assert_eq!(
+                m.det(),
+                -7
+            )
+        }
     }
 }
