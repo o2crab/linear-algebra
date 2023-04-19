@@ -118,6 +118,51 @@ impl<T: Num> Matrix<T> {
         }
         Matrix::from_vec(v)
     }
+
+    fn cofactor(&self, i: usize, j: usize) -> T {
+        let (m,n) = self.shape();
+
+        assert!(
+            self.is_square(),
+            "cofactor is only defined for square metrices"
+        );
+        assert!(
+            m > 1,
+            "cofactor is not defined for (1,1) matrices"
+        );
+        assert!(
+            i <= m && j <= n,
+            "index out of range"
+        );
+
+        if (i+j) % 2 == 0 {
+            self.submat(i, j).det()
+        } else {
+            - self.submat(i, j).det()
+        }
+    }
+
+    pub fn cofactor_mat(&self) -> Self {
+        let mut v = Vec::new();
+        let (m, n) = self.shape();
+
+        assert!(
+            self.is_square(),
+            "cofactor matrix is only defined for square metrices"
+        );
+        assert!(
+            m > 1,
+            "cofactor matrix is not defined for (1,1) matrices"
+        );
+
+        for i in 1..=n {
+            v.push(Vec::new());
+            for j in 1..=m {
+                v.last_mut().unwrap().push(self.cofactor(j, i));
+            }
+        }
+        Matrix::from_vec(v)
+    }
 }
 
 impl<T: Num> std::fmt::Display for Matrix<T> {
@@ -772,6 +817,93 @@ mod tests {
                 m.det(),
                 -7
             )
+        }
+    }
+
+    mod cofactor {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "cofactor is only defined for square metrices")]
+        fn non_square_panic() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            m.cofactor(1,2);
+        }
+
+        #[test]
+        #[should_panic(expected = "cofactor is not defined for (1,1) matrices")]
+        fn one_one_matrix_panic() {
+            let m = Matrix::from_vec(vec![vec![2]]);
+            m.cofactor(1,1);
+        }
+
+        #[test]
+        #[should_panic(expected = "index out of range")]
+        fn index_out_of_range_panic() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6],
+                vec![7,8,9]
+            ]);
+            m.cofactor(4,1);
+        }
+
+        #[test]
+        fn calc() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6],
+                vec![7,8,9]
+            ]);
+            assert_eq!(
+                m.cofactor(1,1),
+                -3
+            );
+            assert_eq!(
+                m.cofactor(2,3),
+                6
+            );
+        }
+    }
+
+    mod cofactor_mat {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "cofactor matrix is only defined for square metrices")]
+        fn non_square_panic() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            m.cofactor_mat();
+        }
+
+        #[test]
+        #[should_panic(expected = "cofactor matrix is not defined for (1,1) matrices")]
+        fn one_one_matrix_panic() {
+            let m = Matrix::from_vec(vec![vec![2]]);
+            m.cofactor_mat();
+        }
+
+        #[test]
+        fn calc() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6],
+                vec![7,8,9]
+            ]);
+            assert_eq!(
+                m.cofactor_mat(),
+                Matrix::from_vec(vec![
+                    vec![-3, 6, -3],
+                    vec![6, -12, 6],
+                    vec![-3, 6, -3]
+                ])
+            );
         }
     }
 }
