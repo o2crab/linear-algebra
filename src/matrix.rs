@@ -179,6 +179,12 @@ impl<T: ExactNum> Matrix<T> {
     // panics if the matrix is not square
     // returns None if the matrix is not regular
     pub fn inverse(&self) -> Option<Matrix<T::DivOutput>> {
+        let (m, n) = self.shape();
+        assert_eq!(
+            m, n,
+            "the inverse matrix is only defined for square matrices"
+        );
+
         if self.is_regular() {
             let d = self.det();
             Some( map_elem(|x| ExactNum::div(x, d), &self.cofactor_mat()) )
@@ -986,7 +992,7 @@ mod tests {
         use super::*;
 
         #[test]
-        #[should_panic(expected = "the regularity is only defined for square matrices")]
+        #[should_panic(expected = "the inverse matrix is only defined for square matrices")]
         fn non_square_panic() {
             let non_square = Matrix::from_vec(vec![
                 vec![1,2,3],
