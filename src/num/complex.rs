@@ -108,7 +108,28 @@ impl<T: Num> Sum for Complex<T> {
     }
 }
 
-impl<T: RealNum> Num for Complex<T> {}
+impl<T: Num> Num for Complex<T> {}
+
+impl<T> ExactNum for Complex<T>
+where
+    T: RealNum + ExactNum,
+    T::DivOutput: RealNum
+{
+    type DivOutput = Complex<T::DivOutput>;
+
+    fn div(self, rhs: Self) -> Self::DivOutput {
+        assert_ne!(
+            rhs, Self::zero(),
+            "cannot divide by 0"
+        );
+
+        let denom = (rhs * rhs.c()).re();
+        let nom = self * rhs.c();
+        let re = nom.re().div(denom);
+        let im = nom.im().div(denom);
+        Self::DivOutput::new(re, im)
+    }
+}
 
 
 

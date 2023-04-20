@@ -75,6 +75,123 @@ impl<T: Num> Matrix<T> {
             x => &(self * self).pow(x / 2) * self
         }
     }
+
+    pub fn det(&self) -> T {
+        assert!(
+            self.is_square(),
+            "det is only defined for square matrices"
+        );
+
+        if self.shape().0 == 1 {
+            return self.elem[0][0];
+        } else {
+            self.elem[0].iter().enumerate().map(|(j, &a1j)| {
+                let j = j+1;
+                if (1+j) % 2 == 0 {
+                    a1j * self.submat(1,j).det()
+                } else {
+                    - a1j * self.submat(1,j).det()
+                }
+            }).sum()
+        }
+    }
+
+    fn submat(&self, i: usize, j: usize) -> Self {
+        let (m, n) = self.shape();
+        assert!(m > 1 && n > 1);
+
+        let i = i-1;
+        let j = j-1;
+
+        let mut v = Vec::new();
+        for s in 0..m {
+            if s == i {
+                continue;
+            }
+            v.push(Vec::new());
+            for t in 0..n {
+                if t == j {
+                    continue;
+                }
+                v.last_mut().unwrap().push(self.elem[s][t]);
+            }
+        }
+        Matrix::from_vec(v)
+    }
+
+    fn cofactor(&self, i: usize, j: usize) -> T {
+        let (m,n) = self.shape();
+
+        assert!(
+            self.is_square(),
+            "cofactor is only defined for square metrices"
+        );
+        assert!(
+            m > 1,
+            "cofactor is not defined for (1,1) matrices"
+        );
+        assert!(
+            i <= m && j <= n,
+            "index out of range"
+        );
+
+        if (i+j) % 2 == 0 {
+            self.submat(i, j).det()
+        } else {
+            - self.submat(i, j).det()
+        }
+    }
+
+    pub fn cofactor_mat(&self) -> Self {
+        let mut v = Vec::new();
+        let (m, n) = self.shape();
+
+        assert!(
+            self.is_square(),
+            "the cofactor matrix is only defined for square metrices"
+        );
+        assert!(
+            m > 1,
+            "the cofactor matrix is not defined for (1,1) matrices"
+        );
+
+        for i in 1..=n {
+            v.push(Vec::new());
+            for j in 1..=m {
+                v.last_mut().unwrap().push(self.cofactor(j, i));
+            }
+        }
+        Matrix::from_vec(v)
+    }
+}
+
+impl<T: ExactNum> Matrix<T> {
+    pub fn is_regular(&self) -> bool {
+        let (m, n) = self.shape();
+        assert_eq!(
+            m, n,
+            "the regularity is only defined for square matrices"
+        );
+
+        self.det() != T::zero()
+    }
+
+    // panics if the matrix is not square
+    // returns None if the matrix is not regular
+    pub fn inverse(&self) -> Option<Matrix<T::DivOutput>> {
+        let (m, n) = self.shape();
+        assert_eq!(
+            m, n,
+            "the inverse matrix is only defined for square matrices"
+        );
+
+        if self.is_regular() {
+            let d = self.det();
+            Some( map_elem(|x| ExactNum::div(x, d), &self.cofactor_mat()) )
+        } else {
+            None
+        }
+    }
 }
 
 impl<T: Num> std::fmt::Display for Matrix<T> {
@@ -407,11 +524,11 @@ mod tests {
 
         #[test]
         #[should_panic(expected = "only square matrices can be powered")]
-        fn non_square_matrix_panic() {
-            let non_square_mat = Matrix::from_vec(vec![
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
                 vec![1, 2]
             ]);
-            non_square_mat.pow(3);
+            non_square.pow(3);
         }
 
         #[test]
@@ -682,5 +799,235 @@ mod tests {
                 vec![Complex::new(2,3), Complex::new(0,-3), Complex::new(2,-1)]
             ])
         )
+    }
+
+    mod det {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "det is only defined for square matrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1, 2, 3],
+                vec![4, 5, 6]
+            ]);
+            non_square.det();
+        }
+
+        #[test]
+        fn one() {
+            let m = Matrix::from_vec(vec![vec![2]]);
+            assert_eq!(
+                m.det(),
+                2
+            );
+        }
+
+        #[test]
+        fn two() {
+            let m = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 4]
+            ]);
+            assert_eq!(
+                m.det(),
+                1 * 4 - 2 * 3
+            )
+        }
+
+        #[test]
+        fn three() {
+            let m = Matrix::from_vec(vec![
+                vec![2, 1, 0],
+                vec![3, 1, 2],
+                vec![-1, 0, 5]
+            ]);
+            assert_eq!(
+                m.det(),
+                -7
+            )
+        }
+    }
+
+    mod cofactor {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "cofactor is only defined for square metrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            non_square.cofactor(1,2);
+        }
+
+        #[test]
+        #[should_panic(expected = "cofactor is not defined for (1,1) matrices")]
+        fn one_one_matrix_panic() {
+            let m = Matrix::from_vec(vec![vec![2]]);
+            m.cofactor(1,1);
+        }
+
+        #[test]
+        #[should_panic(expected = "index out of range")]
+        fn index_out_of_range_panic() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6],
+                vec![7,8,9]
+            ]);
+            m.cofactor(4,1);
+        }
+
+        #[test]
+        fn calc() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6],
+                vec![7,8,9]
+            ]);
+            assert_eq!(
+                m.cofactor(1,1),
+                -3
+            );
+            assert_eq!(
+                m.cofactor(2,3),
+                6
+            );
+        }
+    }
+
+    mod cofactor_mat {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "the cofactor matrix is only defined for square metrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            non_square.cofactor_mat();
+        }
+
+        #[test]
+        #[should_panic(expected = "the cofactor matrix is not defined for (1,1) matrices")]
+        fn one_one_matrix_panic() {
+            let m = Matrix::from_vec(vec![vec![2]]);
+            m.cofactor_mat();
+        }
+
+        #[test]
+        fn calc() {
+            let m = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6],
+                vec![7,8,9]
+            ]);
+            assert_eq!(
+                m.cofactor_mat(),
+                Matrix::from_vec(vec![
+                    vec![-3, 6, -3],
+                    vec![6, -12, 6],
+                    vec![-3, 6, -3]
+                ])
+            );
+        }
+    }
+
+    mod is_regular {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "the regularity is only defined for square matrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            non_square.is_regular();
+        }
+
+        #[test]
+        fn regular_return_true() {
+            let regular = Matrix::from_vec(vec![
+                vec![1, 2, 1],
+                vec![2, 1, 1],
+                vec![1, 1, 2]
+            ]);
+            assert!( regular.is_regular() );
+        }
+
+        #[test]
+        fn irregular_return_false() {
+            let irregular = Matrix::from_vec(vec![
+                vec![1, 2, 1],
+                vec![2, 1, 1],
+                vec![3, 3, 2]
+            ]);
+            assert!( ! irregular.is_regular() );
+        }
+
+        #[test]
+        fn works_for_rational() {
+            let irregular = Matrix::from_vec(vec![
+                vec![Rational::new(15,1), Rational::new(25,1)],
+                vec![Rational::new(3,1000), Rational::new(5,1000)]
+            ]);
+            assert!( ! irregular.is_regular() );
+        }
+
+        #[test]
+        fn works_for_complex() {
+            let irregular = Matrix::from_vec(vec![
+                vec![Complex::new(1,2), Complex::new(0, 3)],
+                vec![Complex::new(-2, -4), Complex::new(0, -6)]
+            ]);
+            assert!( ! irregular.is_regular() );
+        }
+    }
+
+    mod inverse {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "the inverse matrix is only defined for square matrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            non_square.inverse();
+        }
+
+        #[test]
+        fn regular_return_inverse_matrix() {
+            let regular = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 1],
+            ]);
+            assert_eq!(
+                regular.inverse(),
+                Some(
+                    Matrix::from_vec(vec![
+                        vec![Rational::new(-1,5), Rational::new(2,5)],
+                        vec![Rational::new(3,5), Rational::new(-1,5)],
+                    ])
+                )
+            );
+        }
+
+        #[test]
+        fn irregular_return_none() {
+            let irregular = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![1, 2]
+            ]);
+            assert_eq!(
+                irregular.inverse(),
+                None
+            );
+        }
     }
 }
