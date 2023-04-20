@@ -163,7 +163,9 @@ impl<T: Num> Matrix<T> {
         }
         Matrix::from_vec(v)
     }
+}
 
+impl<T: ExactNum> Matrix<T> {
     pub fn is_regular(&self) -> bool {
         let (m, n) = self.shape();
         assert_eq!(
@@ -946,6 +948,24 @@ mod tests {
                 vec![1, 2, 1],
                 vec![2, 1, 1],
                 vec![3, 3, 2]
+            ]);
+            assert!( ! irregular.is_regular() );
+        }
+
+        #[test]
+        fn works_for_rational() {
+            let irregular = Matrix::from_vec(vec![
+                vec![Rational::new(15,1), Rational::new(25,1)],
+                vec![Rational::new(3,1000), Rational::new(5,1000)]
+            ]);
+            assert!( ! irregular.is_regular() );
+        }
+
+        #[test]
+        fn works_for_complex() {
+            let irregular = Matrix::from_vec(vec![
+                vec![Complex::new(1,2), Complex::new(0, 3)],
+                vec![Complex::new(-2, -4), Complex::new(0, -6)]
             ]);
             assert!( ! irregular.is_regular() );
         }

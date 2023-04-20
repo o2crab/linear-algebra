@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::iter::Sum;
 pub use complex::Complex;
-pub use rational::Rational;
+pub use rational::*;
 
 
 pub trait Num : Clone + Copy + Debug + Display + PartialEq + Neg<Output = Self> + Add<Self, Output = Self> + Zero + Sub<Self, Output = Self> + Mul<Self, Output = Self> + One + Sum {
@@ -19,6 +19,12 @@ impl RealNum for i32 {}
 impl RealNum for f32 {}
 
 impl<T: RealNum> Num for T {}
+
+pub trait ExactNum: Num {}
+
+impl<T: Integer> ExactNum for T {}
+impl<T: Integer> ExactNum for Rational<T> {}
+impl<T: ExactNum> ExactNum for Complex<T> {}
 
 
 pub trait Zero {
