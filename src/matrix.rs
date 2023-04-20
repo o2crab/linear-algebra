@@ -148,11 +148,11 @@ impl<T: Num> Matrix<T> {
 
         assert!(
             self.is_square(),
-            "cofactor matrix is only defined for square metrices"
+            "the cofactor matrix is only defined for square metrices"
         );
         assert!(
             m > 1,
-            "cofactor matrix is not defined for (1,1) matrices"
+            "the cofactor matrix is not defined for (1,1) matrices"
         );
 
         for i in 1..=n {
@@ -174,6 +174,17 @@ impl<T: ExactNum> Matrix<T> {
         );
 
         self.det() != T::zero()
+    }
+
+    // panics if the matrix is not square
+    // returns None if the matrix is not regular
+    pub fn inverse(&self) -> Option<Matrix<T::DivOutput>> {
+        if self.is_regular() {
+            let d = self.det();
+            Some( map_elem(|x| ExactNum::div(x, d), &self.cofactor_mat()) )
+        } else {
+            None
+        }
     }
 }
 
@@ -968,6 +979,49 @@ mod tests {
                 vec![Complex::new(-2, -4), Complex::new(0, -6)]
             ]);
             assert!( ! irregular.is_regular() );
+        }
+    }
+
+    mod inverse {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "the regularity is only defined for square matrices")]
+        fn non_square_panic() {
+            let non_square = Matrix::from_vec(vec![
+                vec![1,2,3],
+                vec![4,5,6]
+            ]);
+            non_square.inverse();
+        }
+
+        #[test]
+        fn regular_return_inverse_matrix() {
+            let regular = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![3, 1],
+            ]);
+            assert_eq!(
+                regular.inverse(),
+                Some(
+                    Matrix::from_vec(vec![
+                        vec![Rational::new(-1,5), Rational::new(2,5)],
+                        vec![Rational::new(3,5), Rational::new(-1,5)],
+                    ])
+                )
+            );
+        }
+
+        #[test]
+        fn irregular_return_none() {
+            let irregular = Matrix::from_vec(vec![
+                vec![1, 2],
+                vec![1, 2]
+            ]);
+            assert_eq!(
+                irregular.inverse(),
+                None
+            );
         }
     }
 }

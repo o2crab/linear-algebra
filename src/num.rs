@@ -15,16 +15,17 @@ pub trait Num : Clone + Copy + Debug + Display + PartialEq + Neg<Output = Self> 
 
 pub trait RealNum: Clone + Copy + Debug + Display + PartialEq + Neg<Output = Self> + Add<Self, Output = Self> + Zero + Sub<Self, Output = Self> + Mul<Self, Output = Self> + One + Sum {}
 
-impl RealNum for i32 {}
+impl<T: Integer> RealNum for T {}
 impl RealNum for f32 {}
 
 impl<T: RealNum> Num for T {}
 
-pub trait ExactNum: Num {}
+// an implementor type can be used to do calculations (including division) without arithmetic error.
+pub trait ExactNum: Num {
+    type DivOutput: Num;
 
-impl<T: Integer> ExactNum for T {}
-impl<T: Integer> ExactNum for Rational<T> {}
-impl<T: ExactNum> ExactNum for Complex<T> {}
+    fn div(self, rhs: Self) -> Self::DivOutput;
+}
 
 
 pub trait Zero {

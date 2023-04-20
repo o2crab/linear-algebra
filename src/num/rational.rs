@@ -25,6 +25,14 @@ impl<T: Integer> Rational<T> {
         let denominator = self.1 / d;
         Self(numerator, denominator)
     }
+
+    pub fn inverse(self) -> Option<Self> {
+        if self.0 == T::zero() {
+            return None;
+        }
+
+        Some(Self::new(self.1, self.0))
+    }
 }
 
 impl<T: Integer> Display for Rational<T> {
@@ -85,6 +93,19 @@ impl<T: Integer> Sum for Rational<T> {
 
 impl<T: Integer> RealNum for Rational<T> {}
 
+impl<T: Integer> ExactNum for Rational<T> {
+    type DivOutput = Rational<T>;
+
+    fn div(self, rhs: Self) -> Self::DivOutput {
+        assert_ne!(
+            rhs, Self::zero(),
+            "cannot divide by 0"
+        );
+
+        self * rhs.inverse().unwrap()
+    }
+}
+
 
 pub trait Integer: Num + Div<Output = Self> + Rem<Output = Self> + PartialOrd {}
 
@@ -106,7 +127,21 @@ fn abs<T: Integer>(x: T) -> T {
     }
 }
 
+impl<T: Integer> ExactNum for T {
+    type DivOutput = Rational<T>;
+
+    fn div(self, rhs: Self) -> Self::DivOutput {
+        assert_ne!(
+            rhs, Self::zero(),
+            "cannot divide by 0"
+        );
+
+        Rational::new(self, rhs)
+    }
+}
+
 impl Integer for i32 {}
+
 
 
 
@@ -280,5 +315,43 @@ mod tests {
             Rational::new(-3, 8) * Rational::new(10, 9),
             Rational::new(-5, 12)
         )
+    }
+
+    mod div {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "cannot divide by 0")]
+        fn div_by_0_panic() {
+            let _ = Rational::new(5, 3).div(Rational::zero());
+        }
+
+        #[test]
+        fn div_return_inverse_mul() {
+            let r1 = Rational::new(5, 3);
+            let r2 = Rational::new(7, 6);
+            assert_eq!(
+                r1.div(r2),
+                Rational::new(10, 7)
+            );
+        }
+    }
+
+    mod integer_div {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "cannot divide by 0")]
+        fn div_by_0_panic() {
+            let _ = ExactNum::div(3, 0);
+        }
+
+        #[test]
+        fn div_return_rational() {
+            assert_eq!(
+                ExactNum::div(9, 42),
+                Rational::new(3, 14)
+            );
+        }
     }
 }
